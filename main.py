@@ -152,7 +152,7 @@ def send_message(message):
     else:
         logging.info('No birthdays or anniversaries today!')
 
-@repeat(every().day.at('8:00', 'Asia/Amman'))
+@repeat(every().day.at('08:00', 'Asia/Amman'))
 def main():
     message = prepare_message()
     send_message(message)
