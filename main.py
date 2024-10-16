@@ -8,6 +8,9 @@ from dotenv import load_dotenv
 from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 
+from schedule import every, repeat, run_pending
+import time
+
 load_dotenv()
 
 BIRTHDAY_GIFS = json.load(open('bin/birthday_gifs.json'))
@@ -132,17 +135,21 @@ def send_message(message):
         )
 
         if r.status_code == 200:
-            print('Message sent successfully!')
-            print(r.text)
+            print(f'{datetime.now().strftime("%B %d, %Y %I:%M %p")}: Message sent successfully!')
         else:
-            print('Error:', r.status_code, r.text)
+            print(f'{datetime.now().strftime("%B %d, %Y %I:%M %p")}: Error:', r.status_code, r.text)
 
     else:
-        print('No birthdays or anniversaries today!')
+        print(f'{datetime.now().strftime("%B %d, %Y %I:%M %p")}: No birthdays or anniversaries today!')
 
+
+@repeat(every().day.at('8:00', 'Asia/Amman'))
 def main():
     message = prepare_message()
     send_message(message)
 
+
 if __name__ == '__main__':
-    main()
+    while True:
+        run_pending()
+        time.sleep(1)
