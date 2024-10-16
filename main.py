@@ -1,6 +1,7 @@
 import os
 import json
 import random
+import logging
 import gspread
 import requests
 import pandas as pd
@@ -12,6 +13,15 @@ from schedule import every, repeat, run_pending
 import time
 
 load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("bot_activity.log"),
+        logging.StreamHandler()
+    ]
+)
 
 BIRTHDAY_GIFS = json.load(open('bin/birthday_gifs.json'))
 ANNIVERSARY_GIFS = json.load(open('bin/anniversary_gifs.json'))
@@ -30,7 +40,7 @@ def get_birthdays(df: pd.DataFrame):
     today = datetime.now().date()
     today_month_day = today.strftime('%m-%d')
     birthday_today = df.loc[df['Birthday'].dt.strftime('%m-%d') == today_month_day, 'Employee Name'].tolist()
-    return  birthday_today
+    return birthday_today
 
 def get_anniversaries(df: pd.DataFrame):
     df['Hire Date'] = pd.to_datetime(df['Hire Date'])
@@ -124,7 +134,7 @@ def prepare_message():
                         }
                     ]
                 })
-                
+    
     return message
 
 def send_message(message):
@@ -135,13 +145,12 @@ def send_message(message):
         )
 
         if r.status_code == 200:
-            print(f'{datetime.now().strftime("%B %d, %Y %I:%M %p")}: Message sent successfully!')
+            logging.info('Message sent successfully!')
         else:
-            print(f'{datetime.now().strftime("%B %d, %Y %I:%M %p")}: Error:', r.status_code, r.text)
+            logging.error('Error sending message: %s, %s', r.status_code, r.text)
 
     else:
-        print(f'{datetime.now().strftime("%B %d, %Y %I:%M %p")}: No birthdays or anniversaries today!')
-
+        logging.info('No birthdays or anniversaries today!')
 
 @repeat(every().day.at('8:00', 'Asia/Amman'))
 def main():
