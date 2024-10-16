@@ -39,4 +39,5 @@ SPREADSHEET_NAME="Google Spreadsheet Name"
 > If you want to run the script at a certain time, you can use a cron job or a task scheduler.
 
 ## To-Do
-- [ ] Built-in scheduling.
+- [ ] Built-in scheduling
+- [ ] Edit GIFs to only be square
