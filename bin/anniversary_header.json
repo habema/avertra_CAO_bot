@@ -1,0 +1,12 @@
+{
+    "type": "section",
+    "text": {
+        "type": "mrkdwn",
+        "text": ":confetti_ball: *Anniversaries!* :confetti_ball:\n\nCongratulations to everyone celebrating a work anniversary today! Your dedication and hard work make all the difference!"
+    },
+    "accessory": {
+        "type": "image",
+        "image_url": "",
+        "alt_text": "work anniversary gif"
+    }
+}

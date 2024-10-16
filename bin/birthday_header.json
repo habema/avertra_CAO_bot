@@ -1,0 +1,12 @@
+{
+    "type": "section",
+    "text": {
+        "type": "mrkdwn",
+        "text": ":birthday: *Birthdays!* :birthday:\n\n Let's celebrate the birthdays of these amazing people today! Wishing you all a fantastic year ahead!"
+    },
+    "accessory": {
+        "type": "image",
+        "image_url": "",
+        "alt_text": "birthday gif"
+    }
+}

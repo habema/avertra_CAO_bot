@@ -1,0 +1,20 @@
+{ 
+    "blocks": [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": ":loudspeaker:  Announcement Time!  :loudspeaker:"
+            }
+        },
+        {
+            "type": "context",
+            "elements": [
+                {
+                    "text": "*{{DATE}}*  |  Chief Anniversaries Officer",
+                    "type": "mrkdwn"
+                }
+            ]
+        }
+    ]
+}
