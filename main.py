@@ -24,16 +24,14 @@ def get_data(spreadsheet_name: str):
 
 def get_birthdays(df: pd.DataFrame):
     df['Birthday'] = pd.to_datetime(df['Birthday'])
-    # today = datetime.now().date()
-    today = datetime.strptime('8/15', '%m/%d').date()
+    today = datetime.now().date()
     today_month_day = today.strftime('%m-%d')
     birthday_today = df.loc[df['Birthday'].dt.strftime('%m-%d') == today_month_day, 'Employee Name'].tolist()
     return  birthday_today
 
 def get_anniversaries(df: pd.DataFrame):
     df['Hire Date'] = pd.to_datetime(df['Hire Date'])
-    # today = datetime.now().date()
-    today = datetime.strptime('8/15', '%m/%d').date()
+    today = datetime.now().date()
     today_month_day = today.strftime('%m-%d')
     anniversary_today = df.loc[df['Hire Date'].dt.strftime('%m-%d') == today_month_day, 'Employee Name'].tolist()
     return anniversary_today
