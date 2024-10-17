@@ -39,4 +39,4 @@ SPREADSHEET_NAME="Google Spreadsheet Name"
 
 ## To-Do
 - [x] Built-in scheduling
-- [ ] Edit GIFs to only be square
+- [x] Edit GIFs to only be (almost) square 
