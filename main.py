@@ -17,11 +17,14 @@ load_dotenv()
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
     handlers=[
         logging.FileHandler("bot_activity.log"),
         logging.StreamHandler()
     ]
 )
+
+logging.info('Bot started!')
 
 BIRTHDAY_GIFS = json.load(open('bin/birthday_gifs.json'))
 ANNIVERSARY_GIFS = json.load(open('bin/anniversary_gifs.json'))
@@ -99,20 +102,17 @@ def prepare_message():
                 })
 
         if anniversaries:
-            message['blocks'].extend(
-                [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "plain_text",
-                            "text": "\n"
-                        }
-                    },
-                    {
-                        "type": "divider"
+            if birthdays:
+                message['blocks'].append({
+                    "type": "section",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "\n"
                     }
-                ]
-            )
+                })
+            message['blocks'].append({
+                "type": "divider"
+            })
             message['blocks'].append(parse_anniversary_header())
             message['blocks'].append({
                 "type": "rich_text",
