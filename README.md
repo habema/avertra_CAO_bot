@@ -36,6 +36,7 @@ SPREADSHEET_NAME="Google Spreadsheet Name"
 1. Clone this repository
 2. Install the dependencies with `pip install -r requirements.txt`
 3. Run the script with `python main.py` to send the message to the Slack channel everyday at 8:00 AM Amman Time.
+> **Note:** You can use `check.py` to instantly send the message to the Slack channel.
 
 ## To-Do
 - [x] Built-in scheduling
