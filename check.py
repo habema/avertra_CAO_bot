@@ -296,14 +296,9 @@ def send_message(message):
     else:
         logging.info(json.dumps({"info": "No birthdays/anniversaries today or validation failed"}))
 
-# Main function that schedules the daily message check and send operation
-@repeat(every().day.at('08:00', 'Asia/Amman'))
 def main():
     message = prepare_message()
     send_message(message)
 
-# Continuously run the scheduled task
 if __name__ == '__main__':
-    while True:
-        run_pending()
-        time.sleep(1)
+    main()
