@@ -21,21 +21,38 @@ Requirements:
 
 import os
 import json
+import time
 import random
 import logging
 import gspread
 import requests
 import pandas as pd
+from datetime import datetime
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
+
 from oauth2client.service_account import ServiceAccountCredentials
-from schedule import every, repeat, run_pending
-import time
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from schedule import every, repeat, run_pending
+
+# Helper function to safely retrieve environment variables and log if they are missing
+def get_env_variable(var_name):
+    value = os.getenv(var_name)
+    if value is None:
+        logging.error(json.dumps({
+            "error": "Environment variable missing",
+            "variable": var_name,
+        }))
+    return value
+
 # Load environment variables from the .env file
 load_dotenv()
+
+# Load essential environment variables, logging any missing ones
+SPREADSHEET_ID = get_env_variable('SPREADSHEET_ID')
+SLACK_WEBHOOK_URL = get_env_variable('SLACK_WEBHOOK_URL')
+SLACK_DEBUG_WEBHOOK_URL = get_env_variable('SLACK_DEBUG_WEBHOOK_URL')
 
 # Configure structured JSON logging to record bot activity and errors
 class JSONFormatter(logging.Formatter):
@@ -51,26 +68,27 @@ class JSONFormatter(logging.Formatter):
         if record.exc_info:
             log_record["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_record)
+    
+
+# Define a function that sends it to the slack debug channel.
+def send_to_slack_debug(message, level):
+    slack_debug_message = {
+        "text": f'[{level}] {message}',
+    }
+    response = requests.post(SLACK_DEBUG_WEBHOOK_URL, json=slack_debug_message)
+    if response.status_code != 200:
+        logging.error(json.dumps({
+            "error": "Failed to send message to Slack debug channel",
+            "status": response.status_code,
+            "response": response.text,
+        }))
 
 json_handler = logging.StreamHandler()
 json_handler.setFormatter(JSONFormatter())
 logging.basicConfig(level=logging.INFO, handlers=[json_handler])
 
 logging.info('Bot started!')
-
-# Helper function to safely retrieve environment variables and log if they are missing
-def get_env_variable(var_name):
-    value = os.getenv(var_name)
-    if value is None:
-        logging.error(json.dumps({
-            "error": "Environment variable missing",
-            "variable": var_name,
-        }))
-    return value
-
-# Load essential environment variables, logging any missing ones
-SPREADSHEET_NAME = get_env_variable('SPREADSHEET_NAME')
-SLACK_WEBHOOK_URL = get_env_variable('SLACK_WEBHOOK_URL')
+send_to_slack_debug('Bot started!', 'INFO')
 
 # Helper function to load JSON files with error handling to avoid script failure if files are missing or malformed
 def load_json_file(filepath: str):
@@ -136,30 +154,34 @@ def load_credentials():
         logging.error(json.dumps({"error": "Credentials file not found", "file": "creds.json"}))
     except Exception as e:
         logging.error(json.dumps({"error": "Failed to load Google Sheets credentials", "exception": str(e)}))
+        send_to_slack_debug(f'Failed to load Google Sheets credentials: {str(e)}', 'ERROR')
     return None
 
 # Function to fetch data from a Google Sheets spreadsheet, returning a DataFrame or empty DataFrame if unavailable
-def get_data(spreadsheet_name: str):
+def get_data(spreadsheet_id: str):
     client = load_credentials()
     if not client:
         return pd.DataFrame()  # Return an empty DataFrame if credentials are missing
 
     try:
-        sheet = client.open(spreadsheet_name).sheet1
-        data = sheet.get_all_records()
+        sheet = client.open_by_key(spreadsheet_id)
+        worksheet = sheet.worksheet("Sheet1")
+        data = worksheet.get_all_records()
         return pd.DataFrame(data)
     except Exception as e:
         logging.error(json.dumps({
             "error": "Error fetching data from spreadsheet",
-            "spreadsheet_name": spreadsheet_name,
+            "spreadsheet_id": spreadsheet_id,
             "exception": str(e)
         }))
+        send_to_slack_debug(f'Error fetching data from spreadsheet: {str(e)}', 'ERROR')
         return pd.DataFrame()  # Handle missing or inaccessible data safely
 
 # Function to validate and parse date columns in the DataFrame, logging any missing columns or parsing issues
 def validate_date_column(df: pd.DataFrame, column_name: str):
     if column_name not in df.columns:
         logging.warning(json.dumps({"warning": "Missing column in data", "column": column_name}))
+
         return pd.Series(dtype='datetime64[ns]')
 
     try:
@@ -174,7 +196,7 @@ def validate_date_column(df: pd.DataFrame, column_name: str):
 
 # Function to get a list of employee names with birthdays today by matching month and day
 def get_birthdays(df: pd.DataFrame):
-    print(df)
+    # print(df)
     df['Birthday'] = validate_date_column(df, 'Birthday')
     today_month_day = datetime.now().strftime('%m-%d')
     birthdays_today = df.loc[df['Birthday'].dt.strftime('%m-%d') == today_month_day, 'Employee Name'].dropna().tolist()
@@ -210,7 +232,7 @@ def parse_anniversary_header():
 
 # Function to prepare the complete Slack message, including titles, birthday, and anniversary sections
 def prepare_message():
-    df = get_data(SPREADSHEET_NAME)
+    df = get_data(SPREADSHEET_ID)
     birthdays = get_birthdays(df)
     anniversaries = get_anniversaries(df)
 
@@ -263,9 +285,11 @@ def validate_message_content(message):
             text = element.get('text', '')
             if len(text) > max_length:
                 logging.warning(json.dumps({"warning": "Message content exceeds max length"}))
+                send_to_slack_debug('Message content exceeds max length', 'WARNING')
                 return False
             if contains_url(text):
                 logging.warning(json.dumps({"warning": "Message contains prohibited URL"}))
+                send_to_slack_debug('Message contains prohibited URL', 'WARNING')
                 return False
 
     return True
@@ -275,12 +299,17 @@ def send_message(message):
     if circuit_breaker.is_open():
         logging.error(json.dumps({"error": "Circuit breaker open, skipping message"}))
         return
-    
+    if not message:
+        logging.info(json.dumps({"info": "No birthdays/anniversaries today"}))
+        send_to_slack_debug('No birthdays/anniversaries today', 'INFO')
+        return
+
     if message and validate_message_content(message):
         try:
             response = session.post(url=SLACK_WEBHOOK_URL, json=message)
             response.raise_for_status()
             logging.info(json.dumps({"message": "Message sent successfully"}))
+            send_to_slack_debug('Message sent successfully', 'INFO')
             circuit_breaker.failure_count = 0  # Reset on success
         except requests.exceptions.HTTPError as http_err:
             logging.error(json.dumps({
@@ -289,12 +318,15 @@ def send_message(message):
                 "response": response.text,
                 "exception": str(http_err)
             }))
+            send_to_slack_debug(f'HTTP error sending message: {response.status_code}', 'ERROR')
             circuit_breaker.record_failure()
         except requests.exceptions.RequestException as req_err:
             logging.error(json.dumps({"error": "Network error", "exception": str(req_err)}))
+            send_to_slack_debug(f'Network error: {str(req_err)}', 'ERROR')
             circuit_breaker.record_failure()
     else:
-        logging.info(json.dumps({"info": "No birthdays/anniversaries today or validation failed"}))
+        logging.info(json.dumps({"info": "Validation failed"}))
+        send_to_slack_debug('No birthdays/anniversaries today or validation failed', 'INFO')
 
 # Main function that schedules the daily message check and send operation
 @repeat(every().day.at('08:00', 'Asia/Amman'))
