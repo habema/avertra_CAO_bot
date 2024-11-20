@@ -250,7 +250,7 @@ def prepare_message():
                 message['blocks'][-1]['elements'].append({
                     "type": "rich_text_list",
                     "style": "bullet",
-                    "elements": [{"type": "rich_text_section", "elements": [{"type": "text", "text": name.title()}]}]
+                    "elements": [{"type": "rich_text_section", "elements": [{"type": "text", "text": name}]}]
                 })
 
         # Add anniversary section if there are anniversaries today
@@ -265,7 +265,7 @@ def prepare_message():
                 message['blocks'][-1]['elements'].append({
                     "type": "rich_text_list",
                     "style": "bullet",
-                    "elements": [{"type": "rich_text_section", "elements": [{"type": "text", "text": name.title()}]}]
+                    "elements": [{"type": "rich_text_section", "elements": [{"type": "text", "text": name}]}]
                 })
     
     return message
