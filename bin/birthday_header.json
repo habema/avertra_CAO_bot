@@ -2,7 +2,7 @@
     "type": "section",
     "text": {
         "type": "mrkdwn",
-        "text": ":birthday: *Happy Birthday!* :birthday:\n\nToday, we're celebrating the employee(s) and their special day! :balloon: Thank you for being _you_. :raised_hands:"
+        "text": ":birthday: *Happy Birthday!* :birthday:\n\nToday, we're celebrating the following employee(s) and their special day! :balloon: Thank you for being _you_. :raised_hands:"
     },
     "accessory": {
         "type": "image",
